@@ -37,6 +37,9 @@ const Orders = () => {
   async function handleCancel() {
     await genericPatch(`orders/update/${rowSelected.uuid}?status=2`);
     setIsOpenDetails(false);
+    genericGet("orders/all").then(response => {
+      setData(response.data);
+    }).catch(error => console.log(error));
   }
 
   useEffect(() => {
