@@ -9,13 +9,14 @@ import cartReducer, { CART_TYPES } from '../reducers/cartReducer';
 import Order from '../components/Order';
 import { genericGet, genericPost } from '../service/genericService';
 import { ip } from '../utils/ip';
+import NavTrucks from '../components/NavTrucks';
 
 const Inventory = () => {
 
   const [isOpenPreview, setIsOpenPreview] = useState(false);
   const [isOpenResult, setIsOpenResult] = useState(false);
 
-  const { data, loading } = useQuery("truck/all");
+  const [data, setData] = useState(undefined);//onloading } = useQuery("truck/all");
   const [search, setSearch] = useState('');
   const [filterValues, setFilterValues] = useState([]);
 
@@ -43,12 +44,19 @@ const Inventory = () => {
     }).catch(err => { });
     genericGet('stores').then(res => {
       setStores(res.data);
-    }).catch(err => { })
+    }).catch(err => { });
+    genericGet('truck/all').then((response) => {
+      setData(response.data);
+    });
   }, []);
 
   useEffect(() => {
-    if (data)
-      setFilterValues(data);
+    if (data){
+      if (search)
+        setFilterValues(data.filter(el => el.hawa.includes(search.toUpperCase())));
+      else 
+        setFilterValues(data);
+    }
   }, [data]);
 
 
@@ -79,6 +87,9 @@ const Inventory = () => {
       })
       .finally(() => {
       });
+    genericGet('truck/all').then((response) => {
+      setData(response.data);
+    });
   }
 
   useEffect(() => {
@@ -103,7 +114,10 @@ const Inventory = () => {
           ]
         }
       }, []);
-      setFilterValues(update);
+      if (search)
+        setFilterValues(update.filter(el => el.hawa.includes(search.toUpperCase())));
+      else 
+        setFilterValues(update);
     }
   }, [cart]);
 
@@ -117,17 +131,16 @@ const Inventory = () => {
   return (
     <div>
       <br />
-      <Grid>
-        <GridItem>
-          <ChakraLink as={ReactRouterLink} to='/orders'>
-            <Text fontSize='30px' color='black'>
-              Orders
-            </Text>
-          </ChakraLink>
-        </GridItem>
-      </Grid>
+      <NavTrucks >
+        <ChakraLink as={ReactRouterLink} to='/orders'>
+          Orders
+        </ChakraLink>
+        {' / Inventory'}
+      </NavTrucks>
       <br />
-      <Input onChange={(e) => setSearch(e.target.value)} placeholder='HAWA' value={search} />
+      <Grid p={1}>
+        <Input onChange={(e) => setSearch(e.target.value)} placeholder='HAWA' value={search} />
+      </Grid>
       <TableContainer>
         {filterValues && (
           <Table variant='striped' colorScheme='teal'>
@@ -164,7 +177,7 @@ const Inventory = () => {
         )}
       </TableContainer>
       <br />
-      <Grid templateColumns='repeat(5, 1fr)' gap={4}>
+      <Grid p={3} templateColumns='repeat(5, 1fr)' gap={4}>
         <GridItem colStart={6} colEnd={8} h='5'>
           <Button colorScheme='teal' onClick={() => { setIsOpenPreview(true) }}>Check Order</Button>
         </GridItem>
@@ -174,10 +187,10 @@ const Inventory = () => {
         <ModalOverlay />
         <ModalContent>
           <ModalBody>
-            <Select placeholder='Store' onChange={(e) => { setStoreSelect(e.target.value) }}>
+            <Select p={1} placeholder='Store' onChange={(e) => { setStoreSelect(e.target.value) }}>
               {stores.map(el => <option key={el.storeUuid} value={el.storeUuid}>{el.name}</option>)}
             </Select>
-            <Select placeholder='Client' onChange={(e) => { setClientSelect(e.target.value) }}>
+            <Select p={1} placeholder='Client' onChange={(e) => { setClientSelect(e.target.value) }}>
               {clients.map(el => <option key={el.clientUuid} value={el.clientUuid}>{`${el.firstName} ${el.lastName}`}</option>)}
             </Select>
             <Order columns={[...columns, 'SUBTOTAL', 'TOTAL'].filter(el => el != '')} data={cart} exist={false} />

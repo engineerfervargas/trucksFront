@@ -5,6 +5,7 @@ import { Link as ReactRouterLink } from 'react-router-dom'
 import { Link as ChakraLink } from '@chakra-ui/react'
 
 import Order from '../components/Order';
+import NavTrucks from '../components/NavTrucks';
 import { genericGet, genericPatch } from '../service/genericService';
 
 const Orders = () => {
@@ -23,6 +24,7 @@ const Orders = () => {
 
   const [isOpenDetails, setIsOpenDetails] = useState(false);
   const [isEnableCancel, setIsEnableCancel] = useState(true);
+  const [isEnableCompleted, setIsEnableCompleted] = useState(true);
   const [rowSelected, setRowSelected] = useState({});
 
   const [data, setData] = useState(undefined);
@@ -30,12 +32,14 @@ const Orders = () => {
   function handleOpenDetail(e) {
     setIsOpenDetails(true);
     setRowSelected(e);
-    setIsEnableCancel((Date.parse(new Date()) - Date.parse(e.date)) / 1000 / 60 < 10);
+    setIsEnableCompleted(e.status == 'PENDING');
+    setIsEnableCancel((Date.parse(new Date()) - Date.parse(e.date)) / 1000 / 60 < 1
+      && e.status != 'CANCELED' && e.status != 'COMPLETED');
     console.log(e);
   }
 
-  async function handleCancel() {
-    await genericPatch(`orders/update/${rowSelected.uuid}?status=2`);
+  async function handleStatus(status) {
+    await genericPatch(`orders/update/${rowSelected.uuid}?status=${status}`);
     setIsOpenDetails(false);
     genericGet("orders/all").then(response => {
       setData(response.data);
@@ -51,15 +55,12 @@ const Orders = () => {
   return (
     <div>
       <br />
-      <Grid>
-        <GridItem>
-          <ChakraLink as={ReactRouterLink} to='/inventory'>
-            <Text fontSize='30px' color='black'>
-              Inventory
-            </Text>
-          </ChakraLink>
-        </GridItem>
-      </Grid>
+      <NavTrucks >
+        <ChakraLink as={ReactRouterLink} to='/inventory'>
+          Inventory
+        </ChakraLink>
+        {' / Orders'}
+      </NavTrucks>
       <br />
       <TableContainer>
         {data && (
@@ -109,12 +110,15 @@ const Orders = () => {
           </ModalBody>
 
           <ModalFooter>
-            <Grid templateColumns='repeat(2, 1fr)' gap={6}>
+            <Grid templateColumns='repeat(3, 1fr)' gap={6}>
               <GridItem w='100%' h='10' >
-                <Button isDisabled={!isEnableCancel} onClick={handleCancel} colorScheme='red'>Cancel</Button>
+                <Button isDisabled={!isEnableCompleted} onClick={()=>handleStatus(1)} colorScheme='green'>Complete</Button>
               </GridItem>
               <GridItem w='100%' h='10' >
-                <Button colorScheme='blue' mr={3} onClick={() => { setIsOpenDetails(false) }}>
+                <Button isDisabled={!isEnableCancel} onClick={()=>handleStatus(2)} colorScheme='red'>Cancel</Button>
+              </GridItem>
+              <GridItem w='100%' h='10' >
+                <Button colorScheme='blue' onClick={() => { setIsOpenDetails(false) }}>
                   Close
                 </Button></GridItem>
             </Grid>
